@@ -1,5 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:get/get_core/src/get_main.dart';
+import 'package:iconsax/iconsax.dart';
+import 'package:lottie/lottie.dart';
 
 import '../utils/color_screen.dart';
 import '../utils/size_screen.dart';
@@ -13,23 +17,6 @@ class UsersScreen extends StatefulWidget {
 
 class _UsersScreenState extends State<UsersScreen> {
   bool isUsers = true;
-
-  Future<List<Map<String, dynamic>>> fetchCollection(String collection) async {
-    try {
-      QuerySnapshot snapshot =
-          await FirebaseFirestore.instance.collection(collection).get();
-
-      return snapshot.docs.map((doc) {
-        return {
-          'id': doc.id,
-          ...doc.data() as Map<String, dynamic>,
-        };
-      }).toList();
-    } catch (e) {
-      print('Error fetching $collection: $e');
-      return [];
-    }
-  }
 
   Future<void> deleteUser(String collection, String userId) async {
     try {
@@ -49,6 +36,7 @@ class _UsersScreenState extends State<UsersScreen> {
       backgroundColor: Colors.white,
       body: Column(
         children: [
+          // Верхний блок дизайна
           Container(
             width: double.infinity,
             height: ScreenSize(context).height * 0.30,
@@ -97,42 +85,59 @@ class _UsersScreenState extends State<UsersScreen> {
               ],
             ),
           ),
-          SizedBox(height: 20),
-          ToggleButtons(
-            isSelected: [isUsers, !isUsers],
-            onPressed: (index) {
-              setState(() {
-                isUsers = index == 0;
-              });
-            },
-            borderRadius: BorderRadius.circular(10),
-            selectedColor: Colors.white,
-            fillColor: ScreenColor.color6,
-            constraints: const BoxConstraints(minHeight: 60, minWidth: 150),
-            children: const [
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16),
-                child: Text('Users'),
-              ),
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16),
-                child: Text('Nurse'),
-              ),
-            ],
+          const SizedBox(height: 20),
+          // Переключатель между вкладками
+          DefaultTabController(
+            length: 2,
+            child: Column(
+              children: [
+                TabBar(
+                  indicatorColor: ScreenColor.color6,
+                  labelColor: ScreenColor.color6,
+                  unselectedLabelColor: ScreenColor.color2,
+                  splashFactory: NoSplash.splashFactory,
+                  isScrollable: false,
+                  tabs: const [
+                    Tab(text: 'Пользователи'),
+                    Tab(text: 'Медсестры'),
+                  ],
+                  onTap: (index) {
+                    setState(() {
+                      isUsers = index == 0;
+                    });
+                  },
+                ),
+              ],
+            ),
           ),
-
+          const SizedBox(height: 10),
+          // Список данных
           Expanded(
-            child: FutureBuilder<List<Map<String, dynamic>>>(
-              future: fetchCollection(isUsers ? 'users' : 'nurse'),
+            child: StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection(isUsers ? 'users' : 'nurse')
+                  .snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
+                  return Center(
+                    child: Lottie.asset("assets/lottie/loading.json"),
+                  );
                 } else if (snapshot.hasError) {
-                  return Center(child: Text('Error: ${snapshot.error}'));
-                } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return const Center(child: Text('No data found'));
+                  return Center(
+                    child: Text('Error: ${snapshot.error}'),
+                  );
+                } else if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return const Center(
+                    child: Text('Нет данных'),
+                  );
                 } else {
-                  final data = snapshot.data!;
+                  final data = snapshot.data!.docs.map((doc) {
+                    return {
+                      'id': doc.id,
+                      ...doc.data() as Map<String, dynamic>,
+                    };
+                  }).toList();
+
                   return ListView.builder(
                     itemCount: data.length,
                     itemBuilder: (context, index) {
@@ -150,34 +155,47 @@ class _UsersScreenState extends State<UsersScreen> {
                           ),
                         ),
                         child: ListTile(
-                          title: Text('Name: ${item['name'] ?? 'No Name'}'),
-                          subtitle: Column(
+                          title: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              Text('Name: ${item['name'] ?? 'No Name'}'),
                               Text('Email: ${item['email'] ?? 'No Email'}'),
-                              Text('ID: ${item['id'] ?? 'No ID'}'),
+                              Text('Phone: ${item['phone'] ?? 'No Phone'}'),
+                              Text('ID: ${item['id'] ?? 'No ID'}', style: TextStyle(fontSize: 10),),
                             ],
                           ),
                           trailing: IconButton(
-                            icon: const Icon(Icons.delete, color: Colors.red),
+                            icon: Icon(Iconsax.trash, color: ScreenColor.color6),
                             onPressed: () async {
                               bool confirm = await showDialog(
                                 context: context,
                                 builder: (context) {
                                   return AlertDialog(
-                                    title: const Text('Confirm Delete'),
+                                    backgroundColor: Colors.white,
+                                    title: const Text('Подтвердите удаление'),
                                     content: const Text(
-                                        'Are you sure you want to delete this item?'),
+                                        'Вы уверены, что хотите удалить этот элемент?'),
+
                                     actions: [
                                       TextButton(
                                         onPressed: () =>
                                             Navigator.pop(context, false),
-                                        child: const Text('Cancel'),
+                                        child: const Text('Отмена'),
+                                        style: TextButton.styleFrom(
+                                          backgroundColor: ScreenColor.color6,
+                                          foregroundColor: Colors.white
+                                        ),
                                       ),
                                       TextButton(
-                                        onPressed: () =>
-                                            Navigator.pop(context, true),
-                                        child: const Text('Delete'),
+                                        onPressed: () {
+                                          Navigator.pop(context, true);
+                                          Get.snackbar('Успешно','Пользователь успешно удален');
+                                        },
+                                        child: const Text('Удалить'),
+                                        style: TextButton.styleFrom(
+                                            backgroundColor: ScreenColor.color6,
+                                            foregroundColor: Colors.white
+                                        ),
                                       ),
                                     ],
                                   );
@@ -187,7 +205,6 @@ class _UsersScreenState extends State<UsersScreen> {
                               if (confirm) {
                                 await deleteUser(
                                     isUsers ? 'users' : 'nurse', item['id']);
-                                setState(() {}); // Refresh list
                               }
                             },
                           ),

@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:lottie/lottie.dart';
 
 import '../../utils/color_screen.dart';
 import '../../utils/size_screen.dart';
@@ -65,7 +66,7 @@ class _AdminScreenState extends State<AdminScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       body: _isLoading
-          ? Center(child: CircularProgressIndicator())
+          ? Center(child: Lottie.asset("assets/lottie/loading.json"))
           : _errorMessage.isNotEmpty
               ? Center(child: Text(_errorMessage))
               : Column(

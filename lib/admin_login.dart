@@ -2,6 +2,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:medicall_admin/nav_bar.dart';
+import 'package:medicall_admin/utils/color_screen.dart';
+import 'package:medicall_admin/utils/size_screen.dart';
+import 'package:medicall_admin/widgets/custom_button.dart';
+import 'package:medicall_admin/widgets/custom_text_field.dart';
 
 import 'home/admin_screen.dart';
 
@@ -46,54 +50,35 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: Text("Вход для Администратора"),
-        backgroundColor: Colors.blue,
-      ),
       body: Stack(
         children: [
-          SafeArea(
+          Center(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 50),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
+                  Image.asset(
+                    'assets/logo.png',
+                    height: ScreenSize(context).width * 0.4,
+                  ),
+                  SizedBox(height: 20),
                   Text(
                     "Добро пожаловать, Администратор!",
                     style: TextStyle(
                       fontSize: 26,
                       fontWeight: FontWeight.bold,
-                      color: Colors.blue,
+                      color: ScreenColor.color6,
                     ),
+                    textAlign: TextAlign.center,
                   ),
                   SizedBox(height: 20),
-                  TextField(
-                    controller: _emailController,
-                    decoration: InputDecoration(
-                      labelText: "Email",
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.email),
-                    ),
-                  ),
+                  CustomTextField(controller: _emailController, label: "Email", icon: Icons.email),
                   SizedBox(height: 20),
-                  TextField(
-                    controller: _passwordController,
-                    obscureText: true,
-                    decoration: InputDecoration(
-                      labelText: "Пароль",
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.lock),
-                    ),
-                  ),
+                  CustomTextField(controller: _passwordController, label: "Пароль", icon: Icons.lock),
                   SizedBox(height: 30),
-                  ElevatedButton(
-                    onPressed: _login,
-                    child: Text("Войти"),
-                    style: ElevatedButton.styleFrom(
-                      padding: EdgeInsets.symmetric(vertical: 15),
-                      minimumSize: Size(double.infinity, 50),
-                    ),
-                  ),
+                  CustomButton(text: "Войти", onPressed: _login),
                 ],
               ),
             ),

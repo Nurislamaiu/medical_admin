@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:lottie/lottie.dart';
 import 'package:medicall_admin/admin_login.dart';
 import 'package:medicall_admin/utils/color_screen.dart';
 import 'package:medicall_admin/utils/size_screen.dart';
@@ -78,19 +79,6 @@ class _AdminApprovalScreenState extends State<AdminApprovalScreen> {
               ],
             ),
           ),
-          IconButton(
-            onPressed: () async {
-              try {
-                await FirebaseAuth.instance.signOut();
-                Navigator.pushReplacement(context, MaterialPageRoute(builder: (_)=> AdminLoginScreen()));
-              } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text("Error logging out: $e")),
-                );
-              }
-            },
-            icon: const Icon(Icons.logout, color: Colors.white),
-          ),
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream: _firestore
@@ -100,14 +88,21 @@ class _AdminApprovalScreenState extends State<AdminApprovalScreen> {
                   .snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(
-                    child: CircularProgressIndicator(),
+                  return Center(
+                    child: Lottie.asset("assets/lottie/loading.json", height: ScreenSize(context).height * 0.1),
                   );
                 }
 
                 if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return const Center(
-                    child: Text("Нет пользователей для проверки"),
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Lottie.asset("assets/lottie/check.json", height: ScreenSize(context).height * 0.3),
+                        SizedBox(height: 10),
+                        Text("Нет пользователей для проверки"),
+                      ],
+                    ),
                   );
                 }
 
@@ -119,6 +114,7 @@ class _AdminApprovalScreenState extends State<AdminApprovalScreen> {
                     final user = users[index];
                     final userId = user.id;
                     final certificateNumber = user['certificateNumber'];
+                    final name = user['name'];
                     final city = user['city'];
                     final experience = user['experience'];
                     final iin = user['iin'];
@@ -145,31 +141,36 @@ class _AdminApprovalScreenState extends State<AdminApprovalScreen> {
                           children: [
                             ListTile(
                               contentPadding: EdgeInsets.zero,
-                              title: Text(
-                                "Email: $email",
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                ),
-                              ),
-                              subtitle: Padding(
-                                padding: const EdgeInsets.only(top: 10),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text("ID: $userId", style: TextStyle(fontSize: 14, color: Colors.grey[700])),
-                                    SizedBox(height: 5),
-                                    Text("Certificate Number: $certificateNumber", style: TextStyle(fontSize: 14, color: Colors.grey[700])),
-                                    SizedBox(height: 5),
-                                    Text("IIN: $iin", style: TextStyle(fontSize: 14, color: Colors.grey[700])),
-                                    SizedBox(height: 5),
-                                    Text("Address: $city", style: TextStyle(fontSize: 14, color: Colors.grey[700])),
-                                    SizedBox(height: 5),
-                                    Text("Experience: $experience", style: TextStyle(fontSize: 14, color: Colors.grey[700])),
-                                    SizedBox(height: 5),
-                                    Text("Phone: $phone", style: TextStyle(fontSize: 14, color: Colors.grey[700])),
-                                  ],
-                                ),
+                              title: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    "Имя: $name",
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                  Text(
+                                    "Почта: $email",
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                  SizedBox(height: 5),
+                                  Text("Номер Сертификата: $certificateNumber", style: TextStyle(fontSize: 14, color: Colors.grey[700])),
+                                  SizedBox(height: 5),
+                                  Text("ИИН: $iin", style: TextStyle(fontSize: 14, color: Colors.grey[700])),
+                                  SizedBox(height: 5),
+                                  Text("Адрес: $city", style: TextStyle(fontSize: 14, color: Colors.grey[700])),
+                                  SizedBox(height: 5),
+                                  Text("Опыт: $experience", style: TextStyle(fontSize: 14, color: Colors.grey[700])),
+                                  SizedBox(height: 5),
+                                  Text("Телефон: $phone", style: TextStyle(fontSize: 14, color: Colors.grey[700])),
+                                  SizedBox(height: 5),
+                                  Text("ID: $userId", style: TextStyle(fontSize: 14, color: Colors.grey[700])),
+                                ],
                               ),
                             ),
                             Divider(thickness: 1, color: Colors.grey[300]),
