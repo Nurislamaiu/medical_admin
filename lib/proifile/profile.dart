@@ -1,8 +1,15 @@
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:get/get_core/src/get_main.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:lottie/lottie.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import '../../utils/color_screen.dart';
 import '../../utils/size_screen.dart';
@@ -17,6 +24,56 @@ class _AdminScreenState extends State<AdminScreen> {
   bool _isLoading = true;
   String _errorMessage = '';
   Map<String, dynamic>? _cachedAdminData;
+
+  Future<void> _uploadPhoto() async {
+    // Проверяем и запрашиваем разрешения
+    var cameraPermission = await Permission.camera.request();
+    var storagePermission = await Permission.storage.request();
+
+    if (!cameraPermission.isGranted || !storagePermission.isGranted) {
+      Get.snackbar('Ошибка', 'Необходимо предоставить доступ к камере и памяти.');
+      return;
+    }
+
+    try {
+      // Выбор изображения
+      final picker = ImagePicker();
+      final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+
+      if (pickedFile != null) {
+        final File file = File(pickedFile.path);
+        final String fileName = 'admins/${_currentUser!.uid}.jpg';
+
+        // Загрузка изображения в Firebase Storage
+        final storageRef = FirebaseStorage.instance.ref().child(fileName);
+        final uploadTask = storageRef.putFile(file);
+
+        // Получение URL загруженного файла
+        final TaskSnapshot snapshot = await uploadTask;
+        final photoUrl = await snapshot.ref.getDownloadURL();
+
+        // Обновление данных в Firestore
+        await FirebaseFirestore.instance
+            .collection('admin')
+            .doc(_currentUser!.uid)
+            .update({'photoUrl': photoUrl});
+
+        // Обновление локальных данных
+        setState(() {
+          _cachedAdminData?['photoUrl'] = photoUrl;
+        });
+
+        Get.snackbar('Ура', 'Фотография успешно загружена!');
+      } else {
+        Get.snackbar('Ошибка', 'Фотография не выбрана.');
+      }
+    } catch (e) {
+      Get.snackbar('Ошибка', 'Ошибка загрузки фотографии: $e');
+      print(e);
+    }
+  }
+
+
 
   @override
   void initState() {
@@ -137,16 +194,36 @@ class _AdminScreenState extends State<AdminScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              CircleAvatar(
-                radius: 50,
-                backgroundColor: Colors.white,
-                backgroundImage: _cachedAdminData?['photoUrl'] != null
-                    ? NetworkImage(_cachedAdminData!['photoUrl'])
-                    : null,
-                child: _cachedAdminData?['photoUrl'] == null
-                    ? const Icon(Icons.person,
-                        size: 50, color: ScreenColor.color6)
-                    : null,
+              Stack(
+                children: [
+                  CircleAvatar(
+                    radius: 50,
+                    backgroundColor: Colors.white,
+                    backgroundImage: _cachedAdminData?['photoUrl'] != null
+                        ? NetworkImage(_cachedAdminData!['photoUrl'])
+                        : null,
+                    child: _cachedAdminData?['photoUrl'] == null
+                        ? const Icon(Icons.person,
+                            size: 50, color: ScreenColor.color6)
+                        : null,
+                  ),
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: Container(
+                      height: 30,
+                      width: 30,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(100),
+                        color: ScreenColor.color6
+                      ),
+                      child: IconButton(
+                        onPressed: _uploadPhoto,
+                        icon: const Icon(Icons.camera_alt, color: Colors.white, size: 14,),
+                      ),
+                    ),
+                  ),
+                ],
               ),
               IconButton(
                 onPressed: () async {
